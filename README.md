@@ -17,9 +17,9 @@ The service uses environment variables to configure its behavior:
 
 ### Environment Variables
 
-— `PORT` or `PORTS`: Comma-separated list of ports to listen on. Example: `PORTS=8080,8081`.
-— `HEALTHCHECK` or `HEALTHCHECK_PATH`: Comma-separated list of healthcheck paths. Example:
-`HEALTHCHECK_PATH=/health,/status`.
+- `PORT` or `PORTS`: Comma-separated list of ports to listen on. Example: `PORTS=8080,8081`.
+- `HEALTHCHECK` or `HEALTHCHECK_PATH`: Comma-separated list of healthcheck paths. Example:
+  `HEALTHCHECK_PATH=/health,/status`.
 
 ### Example
 

@@ -9,7 +9,7 @@ FROM chainguard/curl:latest-dev
 
 USER root
 # DELETE apk
-RUN rm -rf $(which apk)
+RUN rm -rf $(which apk) $(which ls) $(which which)
 USER 65532
 
 WORKDIR /usr/src/myapp

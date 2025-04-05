@@ -4,6 +4,8 @@ on:
   push:
     branches: [ "main" ]  # O la rama principal que utilices
   workflow_dispatch:  # Permite ejecutar el workflow manualmente
+  schedule:
+    - cron: "0 0 1 * *"  # Ejecutar el primer día de cada mes a medianoche
 
 jobs:
   build-and-push:
@@ -33,32 +35,6 @@ jobs:
         id: datetag
         run: echo "TIMESTAMP=$(date +'%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
 
-      # Construir imagen para x86
-      - name: Construir y subir imagen Docker x86
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/healthcheck:amd64-latest
-            ${{ secrets.DOCKER_USERNAME }}/healthcheck:amd64-${{ steps.datetag.outputs.TIMESTAMP }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/healthcheck:amd64-latest
-          cache-to: type=inline
-
-      # Construir imagen para ARM
-      - name: Construir y subir imagen Docker ARM
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: linux/arm64
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/healthcheck:arm64-latest
-            ${{ secrets.DOCKER_USERNAME }}/healthcheck:arm64-${{ steps.datetag.outputs.TIMESTAMP }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/healthcheck:arm64-latest
-          cache-to: type=inline
-
       # Opcional: Crear manifest multi-arquitectura
       - name: Crear manifest multi-arq
         uses: docker/build-push-action@v6
@@ -69,3 +45,5 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/healthcheck:latest
             ${{ secrets.DOCKER_USERNAME }}/healthcheck:${{ steps.datetag.outputs.TIMESTAMP }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/healthcheck:latest
+          cache-to: type=inline

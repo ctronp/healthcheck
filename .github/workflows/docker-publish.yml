@@ -1,4 +1,4 @@
-name: Docker Build and Push
+name: Docker Build and Push (Multi-Arch)
 
 on:
   push:
@@ -7,16 +7,19 @@ on:
 
 jobs:
   build-and-push:
-    strategy:
-      max-parallel: 2
-      matrix:
-        os: [ ubuntu-24.04, ubuntu-24.04-arm64 ]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout código
         uses: actions/checkout@v3
 
+      # Configurar QEMU para emulación de arquitecturas
+      - name: Configurar QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      # Configurar Docker BuildX con soporte multi-plataforma
       - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -26,26 +29,43 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Determinar arquitectura
-        id: arch
-        run: |
-          if [[ "${{ matrix.os }}" == *"arm"* ]]; then
-            echo "ARCH=arm" >> $GITHUB_OUTPUT
-          else
-            echo "ARCH=x86" >> $GITHUB_OUTPUT
-          fi
-
       - name: Generar etiqueta con fecha y hora
         id: datetag
-        run: echo "TIMESTAMP=${{ steps.arch.outputs.ARCH }}-$(date +'%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
+        run: echo "TIMESTAMP=$(date +'%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
 
-      - name: Construir y subir imagen Docker
+      # Construir imagen para x86
+      - name: Construir y subir imagen Docker x86
         uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: linux/amd64
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/healthcheck:${{ steps.arch.outputs.ARCH }}-latest
-            ${{ secrets.DOCKER_USERNAME }}/healthcheck:${{ steps.datetag.outputs.TIMESTAMP }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/healthcheck:${{ steps.arch.outputs.ARCH }}-latest
+            ${{ secrets.DOCKER_USERNAME }}/healthcheck:amd64-latest
+            ${{ secrets.DOCKER_USERNAME }}/healthcheck:amd64-${{ steps.datetag.outputs.TIMESTAMP }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/healthcheck:amd64-latest
           cache-to: type=inline
+
+      # Construir imagen para ARM
+      - name: Construir y subir imagen Docker ARM
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/healthcheck:arm64-latest
+            ${{ secrets.DOCKER_USERNAME }}/healthcheck:arm64-${{ steps.datetag.outputs.TIMESTAMP }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/healthcheck:arm64-latest
+          cache-to: type=inline
+
+      # Opcional: Crear manifest multi-arquitectura
+      - name: Crear manifest multi-arq
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/healthcheck:latest
+            ${{ secrets.DOCKER_USERNAME }}/healthcheck:${{ steps.datetag.outputs.TIMESTAMP }}

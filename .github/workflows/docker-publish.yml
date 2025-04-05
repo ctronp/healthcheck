@@ -1,0 +1,50 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches: [ "main" ]  # O la rama principal que utilices
+  workflow_dispatch:  # Permite ejecutar el workflow manualmente
+
+jobs:
+  build-and-push:
+    strategy:
+      matrix:
+        os: [ ubuntu-24.04, ubuntu-24.04-arm64 ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login a Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Determinar arquitectura
+        id: arch
+        run: |
+          if [[ "${{ matrix.os }}" == *"arm"* ]]; then
+            echo "ARCH=arm" >> $GITHUB_OUTPUT
+          else
+            echo "ARCH=x86" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generar etiqueta con fecha y hora
+        id: datetag
+        run: echo "TIMESTAMP=${{ steps.arch.outputs.ARCH }}-$(date +'%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
+
+      - name: Construir y subir imagen Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/healthcheck:${{ steps.arch.outputs.ARCH }}-latest
+            ${{ secrets.DOCKER_USERNAME }}/healthcheck:${{ steps.datetag.outputs.TIMESTAMP }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/healthcheck:${{ steps.arch.outputs.ARCH }}-latest
+          cache-to: type=inline

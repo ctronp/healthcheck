@@ -8,3 +8,8 @@ services:
       - PORT=8001,8002
       - HEALTHCHECK=/health,/check-health
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "/usr/bin/curl", "-f", "http://localhost:8001/health" ]
+      interval: 1s
+      timeout: 1s
+      retries: 3

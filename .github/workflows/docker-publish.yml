@@ -4,8 +4,6 @@ on:
   push:
     branches: [ "main" ]  # O la rama principal que utilices
   workflow_dispatch:  # Permite ejecutar el workflow manualmente
-  schedule:
-    - cron: "0 0 1 * *"  # Ejecutar el primer día de cada mes a medianoche
 
 jobs:
   build-and-push:

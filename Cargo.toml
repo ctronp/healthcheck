@@ -14,5 +14,5 @@ incremental = false
 overflow-checks = false
 
 [dependencies]
-axum = "0.8.3"
-tokio = { version = "1.44.2", features = ["full"] }
+axum = "0.8.4"
+tokio = { version = "1.47.1", features = ["full"] }
